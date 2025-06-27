@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>ระบบเช็คอินองค์กร (GPS)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Kanit', sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+    }
+    .container {
+      background: #f5f9ff;
+      border-radius: 24px;
+      width: 320px;
+      padding: 40px 30px;
+      text-align: center;
+      color: #1e3c72;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .profile-pic {
+      width: 180px;
+      height: 240px;
+      border-radius: 12px;
+      object-fit: cover;
+      margin: 0 auto 20px auto;
+      box-shadow: 0 4px 15px rgba(30,60,114,0.3);
+      border: 4px solid #2a5298;
+      background-color: #e1e9ff;
+    }
+    .name {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      user-select: none;
+    }
+    .position {
+      font-size: 16px;
+      font-weight: 500;
+      color: #405f9b;
+      margin-bottom: 30px;
+      user-select: none;
+    }
+    .btn-checkin {
+      background: #14850a;
+      border: none;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      user-select: none;
+    }
+    .btn-checkin:hover:not(:disabled) {
+      background: #1e3c72;
+      box-shadow: 0 10px 30px rgba(30,60,114,0.9);
+    }
+    .btn-checkin:disabled {
+      background: #a0aec0;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    #thai-time {
+      margin-top: 12px;
+      font-size: 26px;
+      font-weight: 600;
+      color: #14850a;
+      user-select: none;
+    }
+    #status {
+      margin-top: 24px;
+      font-size: 16px;
+      font-weight: 600;
+      min-height: 24px;
+      user-select: none;
+    }
+
+    /* ป๊อปอัพ overlay */
+    #popup-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 9999;
+    }
+    #popup-overlay.show {
+      visibility: visible;
+      opacity: 1;
+    }
+    #popup {
+      background: white;
+      color: #1e3c72;
+      padding: 30px 25px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(30,60,114,0.3);
+      max-width: 300px;
+      text-align: center;
+      animation: popupAnim 0.4s ease forwards;
+      position: relative;
+      user-select: none;
+    }
+    @keyframes popupAnim {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    #popup button.close-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: transparent;
+      border: none;
+      font-size: 22px;
+      font-weight: bold;
+      color: #1e3c72;
+      cursor: pointer;
+      user-select: none;
+    }
+    #popup button.close-btn:hover {
+      color: #d9534f;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img id="profile-pic" class="profile-pic" src="https://via.placeholder.com/140x140?text=No+Image" alt="รูปโปรไฟล์" />
+    <div class="name" id="profile-name">กำลังโหลดชื่อ...</div>
+    <div class="position" id="profile-position">ตำแหน่ง</div>
+    <button id="btn-checkin" class="btn-checkin" onclick="toggleCheck()">เช็คอิน</button>
+    <div id="thai-time"></div>
+    <div id="status"></div>
+  </div>
+
+  <!-- Popup -->
+  <div id="popup-overlay">
+    <div id="popup">
+      <button class="close-btn" onclick="closePopup()">&times;</button>
+      <p id="popup-message"></p>
+    </div>
+  </div>
+
+  <script>
+    // พิกัดอนุญาต (เปลี่ยนเป็นพิกัดจริงที่องค์กรคุณ)
+    const allowedLat = 14.870789039762208;
+    const allowedLng = 102.02262767399496;
+    const allowedRadius = 300; // เมตร
+
+    const profilePic = document.getElementById("profile-pic");
+    const profileName = document.getElementById("profile-name");
+    const profilePosition = document.getElementById("profile-position");
+    const btnCheckin = document.getElementById("btn-checkin");
+    const status = document.getElementById("status");
+    const thaiTimeElem = document.getElementById("thai-time");
+
+    // ข้อมูลจาก localStorage หรือข้อมูลทดลอง
+    const username = localStorage.getItem("username") || "โอม";
+    const position = localStorage.getItem("position") || "พนักงานขาย";
+    const photo_url = localStorage.getItem("photo_url") || "https://via.placeholder.com/140x140?text=No+Image";
+
+    profileName.textContent = username;
+    profilePosition.textContent = position;
+    profilePic.src = photo_url;
+
+    let isCheckedIn = false;
+
+    // คำนวณระยะทางระหว่าง 2 จุด (Haversine formula)
+    function getDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371000; // รัศมีโลกเป็นเมตร
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    // แสดงเวลาไทยแบบ realtime
+    function updateThaiTime() {
+      const now = new Date();
+      const options = { timeZone: 'Asia/Bangkok', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      const timeStr = now.toLocaleTimeString('th-TH', options);
+      thaiTimeElem.textContent = ` Time ${timeStr}`;
+    }
+    setInterval(updateThaiTime, 1000);
+    updateThaiTime();
+
+    // ตรวจสอบว่าผู้ใช้ อยู่ในพื้นที่อนุญาตหรือไม่
+    function checkLocation(callback) {
+      if (!navigator.geolocation) {
+        showPopup("❌ เบราว์เซอร์ไม่รองรับ GPS");
+        callback(false);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          const distance = getDistance(lat, lng, allowedLat, allowedLng);
+          if(distance <= allowedRadius) {
+            callback(true);
+          } else {
+            showPopup("⛔ คุณอยู่นอกพื้นที่ที่กำหนด ไม่สามารถเช็คอินได้");
+            callback(false);
+          }
+        },
+        error => {
+          showPopup("❌ ไม่สามารถเข้าถึงตำแหน่ง GPS ได้");
+          callback(false);
+        }
+      );
+    }
+
+    function toggleCheck() {
+      checkLocation(isAllowed => {
+        if (!isAllowed) return;
+
+        if (!isCheckedIn) {
+          // เช็คอิน
+          isCheckedIn = true;
+          btnCheckin.textContent = "เช็คเอาท์";
+          status.textContent = `✅ เช็คอินเรียบร้อย เวลา: ${new Date().toLocaleTimeString()}`;
+          status.style.color = "#2a5298";
+          showPopup("✅ เช็คอินเรียบร้อย!");
+        } else {
+          // เช็คเอาท์
+          isCheckedIn = false;
+          btnCheckin.textContent = "เช็คอิน";
+          status.textContent = `✅ เช็คเอาท์เรียบร้อย เวลา: ${new Date().toLocaleTimeString()}`;
+          status.style.color = "#d9534f";
+          showPopup("✅ เช็คเอาท์เรียบร้อย!");
+        }
+      });
+    }
+
+    // ฟังก์ชันแสดง popup
+    function showPopup(message) {
+      const overlay = document.getElementById("popup-overlay");
+      const messageElem = document.getElementById("popup-message");
+      messageElem.textContent = message;
+      overlay.classList.add("show");
+    }
+
+    // ฟังก์ชันปิด popup
+    function closePopup() {
+      document.getElementById("popup-overlay").classList.remove("show");
+    }
+  </script>
+</body>
+</html>
