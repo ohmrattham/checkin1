@@ -28,7 +28,7 @@
       box-shadow: 0 8px 24px rgba(0,0,0,0.15);
     }
     .profile-pic {
-      width: 180px;
+      width: 200px;
       height: 240px;
       border-radius: 12px;
       object-fit: cover;
@@ -160,7 +160,7 @@
     // พิกัดอนุญาต (เปลี่ยนเป็นพิกัดจริงที่องค์กรคุณ)
     const allowedLat = 14.870789039762208;
     const allowedLng = 102.02262767399496;
-    const allowedRadius = 300; // เมตร
+    const allowedRadius = 30000; // เมตร
 
     const profilePic = document.getElementById("profile-pic");
     const profileName = document.getElementById("profile-name");
@@ -228,27 +228,49 @@
       );
     }
 
-    function toggleCheck() {
-      checkLocation(isAllowed => {
-        if (!isAllowed) return;
+   function toggleCheck() {
+  checkLocation(isAllowed => {
+    if (!isAllowed) return;
 
-        if (!isCheckedIn) {
-          // เช็คอิน
-          isCheckedIn = true;
-          btnCheckin.textContent = "เช็คเอาท์";
-          status.textContent = `✅ เช็คอินเรียบร้อย เวลา: ${new Date().toLocaleTimeString()}`;
-          status.style.color = "#2a5298";
-          showPopup("✅ เช็คอินเรียบร้อย!");
-        } else {
-          // เช็คเอาท์
-          isCheckedIn = false;
-          btnCheckin.textContent = "เช็คอิน";
-          status.textContent = `✅ เช็คเอาท์เรียบร้อย เวลา: ${new Date().toLocaleTimeString()}`;
-          status.style.color = "#d9534f";
-          showPopup("✅ เช็คเอาท์เรียบร้อย!");
-        }
-      });
-    }
+    const now = new Date();
+    const datetime = now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+    const data = {
+      name: username,
+      position: position,
+      status: isCheckedIn ? "เช็คเอาท์" : "เช็คอิน",
+      datetime: datetime
+    };
+
+    fetch("https://script.google.com/macros/s/AKfycbwF5lcavpjytgRlKUSl9gUU6j_msIyaHmf_fatH8QGkKHLb_rYDgVuRRTBvJG_HmrYP/exec", {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: {
+        "Content-Type": "application/json"
+      }
+    })
+    .then(res => res.json())
+    .then(result => {
+      if (data.status === "เช็คอิน") {
+        isCheckedIn = true;
+        btnCheckin.textContent = "เช็คเอาท์";
+        status.textContent = `✅ เช็คอินเรียบร้อย เวลา: ${datetime}`;
+        status.style.color = "#2a5298";
+        showPopup("✅ เช็คอินเรียบร้อย!");
+      } else {
+        isCheckedIn = false;
+        btnCheckin.textContent = "เช็คอิน";
+        status.textContent = `✅ เช็คเอาท์เรียบร้อย เวลา: ${datetime}`;
+        status.style.color = "#d9534f";
+        showPopup("✅ เช็คเอาท์เรียบร้อย!");
+      }
+    })
+    .catch(err => {
+      showPopup("❌ ไม่สามารถบันทึกข้อมูลได้");
+      console.error(err);
+    });
+  });
+}
+
 
     // ฟังก์ชันแสดง popup
     function showPopup(message) {
