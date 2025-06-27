@@ -2,6 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ระบบเช็คอินองค์กร (GPS)</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit&display=swap" rel="stylesheet" />
   <style>
@@ -17,19 +18,27 @@
       justify-content: center;
       align-items: center;
       color: #fff;
+      overflow: hidden;
     }
     .container {
       background: #f5f9ff;
       border-radius: 24px;
-      width: 320px;
-      padding: 40px 30px;
+      width: 95vw;
+      max-width: 600px;
+      height: 90vh;
+      padding: 30px 20px;
       text-align: center;
       color: #1e3c72;
       box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
     }
     .profile-pic {
-      width: 200px;
-      height: 240px;
+      width: 280px;
+      height: 320px;
       border-radius: 12px;
       object-fit: cover;
       margin: 0 auto 20px auto;
@@ -38,13 +47,13 @@
       background-color: #e1e9ff;
     }
     .name {
-      font-size: 24px;
+      font-size: 30px;
       font-weight: 700;
       margin-bottom: 8px;
       user-select: none;
     }
     .position {
-      font-size: 16px;
+      font-size: 20px;
       font-weight: 500;
       color: #405f9b;
       margin-bottom: 30px;
@@ -53,10 +62,10 @@
     .btn-checkin {
       background: #14850a;
       border: none;
-      width: 90px;
-      height: 90px;
+      width: 130px;
+      height: 130px;
       border-radius: 50%;
-      font-size: 18px;
+      font-size: 23px;
       font-weight: 700;
       color: #fff;
       cursor: pointer;
@@ -87,7 +96,6 @@
       min-height: 24px;
       user-select: none;
     }
-
     /* ป๊อปอัพ overlay */
     #popup-overlay {
       position: fixed;
@@ -157,7 +165,6 @@
   </div>
 
   <script>
-    // พิกัดอนุญาต (เปลี่ยนเป็นพิกัดจริงที่องค์กรคุณ)
     const allowedLat = 14.870789039762208;
     const allowedLng = 102.02262767399496;
     const allowedRadius = 30000; // เมตร
@@ -169,7 +176,6 @@
     const status = document.getElementById("status");
     const thaiTimeElem = document.getElementById("thai-time");
 
-    // ข้อมูลจาก localStorage หรือข้อมูลทดลอง
     const username = localStorage.getItem("username") || "โอม";
     const position = localStorage.getItem("position") || "พนักงานขาย";
     const photo_url = localStorage.getItem("photo_url") || "https://via.placeholder.com/140x140?text=No+Image";
@@ -180,9 +186,8 @@
 
     let isCheckedIn = false;
 
-    // คำนวณระยะทางระหว่าง 2 จุด (Haversine formula)
     function getDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371000; // รัศมีโลกเป็นเมตร
+      const R = 6371000;
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
       const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -192,7 +197,6 @@
       return R * c;
     }
 
-    // แสดงเวลาไทยแบบ realtime
     function updateThaiTime() {
       const now = new Date();
       const options = { timeZone: 'Asia/Bangkok', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
@@ -202,7 +206,6 @@
     setInterval(updateThaiTime, 1000);
     updateThaiTime();
 
-    // ตรวจสอบว่าผู้ใช้ อยู่ในพื้นที่อนุญาตหรือไม่
     function checkLocation(callback) {
       if (!navigator.geolocation) {
         showPopup("❌ เบราว์เซอร์ไม่รองรับ GPS");
@@ -228,51 +231,49 @@
       );
     }
 
-   function toggleCheck() {
-  checkLocation(isAllowed => {
-    if (!isAllowed) return;
+    function toggleCheck() {
+      checkLocation(isAllowed => {
+        if (!isAllowed) return;
 
-    const now = new Date();
-    const datetime = now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
-    const data = {
-      name: username,
-      position: position,
-      status: isCheckedIn ? "เช็คเอาท์" : "เช็คอิน",
-      datetime: datetime
-    };
+        const now = new Date();
+        const datetime = now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+        const data = {
+          name: username,
+          position: position,
+          status: isCheckedIn ? "เช็คเอาท์" : "เช็คอิน",
+          datetime: datetime
+        };
 
-    fetch("https://script.google.com/macros/s/AKfycbwF5lcavpjytgRlKUSl9gUU6j_msIyaHmf_fatH8QGkKHLb_rYDgVuRRTBvJG_HmrYP/exec", {
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: {
-        "Content-Type": "application/json"
-      }
-    })
-    .then(res => res.json())
-    .then(result => {
-      if (data.status === "เช็คอิน") {
-        isCheckedIn = true;
-        btnCheckin.textContent = "เช็คเอาท์";
-        status.textContent = `✅ เช็คอินเรียบร้อย เวลา: ${datetime}`;
-        status.style.color = "#2a5298";
-        showPopup("✅ เช็คอินเรียบร้อย!");
-      } else {
-        isCheckedIn = false;
-        btnCheckin.textContent = "เช็คอิน";
-        status.textContent = `✅ เช็คเอาท์เรียบร้อย เวลา: ${datetime}`;
-        status.style.color = "#d9534f";
-        showPopup("✅ เช็คเอาท์เรียบร้อย!");
-      }
-    })
-    .catch(err => {
-      showPopup("❌ ไม่สามารถบันทึกข้อมูลได้");
-      console.error(err);
-    });
-  });
-}
+        fetch("https://script.google.com/macros/s/AKfycbwF5lcavpjytgRlKUSl9gUU6j_msIyaHmf_fatH8QGkKHLb_rYDgVuRRTBvJG_HmrYP/exec", {
+          method: "POST",
+          body: JSON.stringify(data),
+          headers: {
+            "Content-Type": "application/json"
+          }
+        })
+        .then(res => res.json())
+        .then(result => {
+          if (data.status === "เช็คอิน") {
+            isCheckedIn = true;
+            btnCheckin.textContent = "เช็คเอาท์";
+            status.textContent = `✅ เช็คอินเรียบร้อย เวลา: ${datetime}`;
+            status.style.color = "#2a5298";
+            showPopup("✅ เช็คอินเรียบร้อย!");
+          } else {
+            isCheckedIn = false;
+            btnCheckin.textContent = "เช็คอิน";
+            status.textContent = `✅ เช็คเอาท์เรียบร้อย เวลา: ${datetime}`;
+            status.style.color = "#d9534f";
+            showPopup("✅ เช็คเอาท์เรียบร้อย!");
+          }
+        })
+        .catch(err => {
+          showPopup("❌ ไม่สามารถบันทึกข้อมูลได้");
+          console.error(err);
+        });
+      });
+    }
 
-
-    // ฟังก์ชันแสดง popup
     function showPopup(message) {
       const overlay = document.getElementById("popup-overlay");
       const messageElem = document.getElementById("popup-message");
@@ -280,7 +281,6 @@
       overlay.classList.add("show");
     }
 
-    // ฟังก์ชันปิด popup
     function closePopup() {
       document.getElementById("popup-overlay").classList.remove("show");
     }
