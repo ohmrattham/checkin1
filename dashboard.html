@@ -167,7 +167,7 @@
   <script>
     const allowedLat = 14.870789039762208;
     const allowedLng = 102.02262767399496;
-    const allowedRadius = 30000; // เมตร
+    const allowedRadius = 3000000000; // เมตร
 
     const profilePic = document.getElementById("profile-pic");
     const profileName = document.getElementById("profile-name");
@@ -244,7 +244,7 @@
           datetime: datetime
         };
 
-        fetch("https://script.google.com/macros/s/AKfycbwF5lcavpjytgRlKUSl9gUU6j_msIyaHmf_fatH8QGkKHLb_rYDgVuRRTBvJG_HmrYP/exec", {
+        fetch("https://script.google.com/macros/s/AKfycbyRtlPe0d46eCOqqvzRMobGk30GbtCPYj_-xyXua4egPV-1SN8GSCRikGWIYMn3c76a/exec", {
           method: "POST",
           body: JSON.stringify(data),
           headers: {
