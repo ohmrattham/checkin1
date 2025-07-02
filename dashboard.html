@@ -12,91 +12,126 @@
     body {
       margin: 0;
       font-family: 'Kanit', sans-serif;
-      background: linear-gradient(135deg, #1e3c72, #2a5298);
-      height: 100vh;
+      background: linear-gradient(135deg, #7b1fa2, #9c27b0);
+      min-height: 100vh;
       display: flex;
       justify-content: center;
-      align-items: center;
-      color: #fff;
-      overflow: hidden;
+      padding: 20px;
+      color: #333;
     }
     .container {
-      background: #f5f9ff;
-      border-radius: 24px;
-      width: 95vw;
+      background: #fff;
+      border-radius: 20px;
+      width: 100%;
       max-width: 600px;
-      height: 90vh;
       padding: 30px 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
       text-align: center;
-      color: #1e3c72;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      box-sizing: border-box;
+      max-height: 95vh;
+      overflow-y: auto;
     }
     .profile-pic {
-      width: 280px;
-      height: 320px;
-      border-radius: 12px;
+      width: 180px;
+      height: 225px;
       object-fit: cover;
-      margin: 0 auto 20px auto;
-      box-shadow: 0 4px 15px rgba(30,60,114,0.3);
-      border: 4px solid #2a5298;
-      background-color: #e1e9ff;
+      border-radius: 12px;
+      border: 4px solid #ce93d8;
+      background: #f3e5f5;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      user-select: none;
     }
     .name {
-      font-size: 30px;
+      font-size: 24px;
       font-weight: 700;
-      margin-bottom: 8px;
+      color: #6a1b9a;
       user-select: none;
     }
     .position {
-      font-size: 20px;
-      font-weight: 500;
-      color: #405f9b;
-      margin-bottom: 30px;
+      font-size: 16px;
+      color: #7b1fa2;
+      margin-bottom: 10px;
+      user-select: none;
+    }
+    #thai-time {
+      font-size: 18px;
+      color: #4a0072;
+      user-select: none;
+    }
+    #thai-date {
+      font-size: 16px;
+      color: #6a1b9a;
+      margin-bottom: 20px;
       user-select: none;
     }
     .btn-checkin {
-      background: #14850a;
+      padding: 14px 30px;
+      font-size: 20px;
+      font-weight: bold;
       border: none;
-      width: 130px;
-      height: 130px;
-      border-radius: 50%;
-      font-size: 23px;
-      font-weight: 700;
+      border-radius: 50px;
       color: #fff;
-      cursor: pointer;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: 0.3s;
+      width: 80%;
+      max-width: 280px;
       user-select: none;
+      cursor: pointer;
     }
-    .btn-checkin:hover:not(:disabled) {
-      background: #1e3c72;
-      box-shadow: 0 10px 30px rgba(30,60,114,0.9);
+    .btn-checkin.checkin {
+      background-color: #4CAF50;
+    }
+    .btn-checkin.checkout {
+      background-color: #f44336;
     }
     .btn-checkin:disabled {
-      background: #a0aec0;
+      background-color: #ccc;
       cursor: not-allowed;
       box-shadow: none;
     }
-    #thai-time {
-      margin-top: 12px;
-      font-size: 26px;
-      font-weight: 600;
-      color: #14850a;
-      user-select: none;
+    .btn-checkin:hover:not(:disabled) {
+      opacity: 0.9;
     }
     #status {
-      margin-top: 24px;
+      margin-top: 20px;
       font-size: 16px;
-      font-weight: 600;
+      color: #444;
       min-height: 24px;
       user-select: none;
     }
-    /* ป๊อปอัพ overlay */
+    h3 {
+      color: #6a1b9a;
+      margin-top: 30px;
+      margin-bottom: 12px;
+      user-select: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+      user-select: none;
+    }
+    thead tr {
+      background: #f3e5f5;
+      color: #4a0072;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    tbody tr:hover {
+      background: #fce4ec;
+    }
+    .checkin-time {
+      color: #4CAF50;
+      font-weight: 600;
+    }
+    .checkout-time {
+      color: #f44336;
+      font-weight: 600;
+    }
+    /* Popup Overlay */
     #popup-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -106,54 +141,72 @@
       align-items: center;
       visibility: hidden;
       opacity: 0;
-      transition: opacity 0.3s ease;
-      z-index: 9999;
+      transition: 0.3s ease;
+      z-index: 1000;
+      user-select: none;
     }
     #popup-overlay.show {
       visibility: visible;
       opacity: 1;
     }
     #popup {
-      background: white;
-      color: #1e3c72;
-      padding: 30px 25px;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(30,60,114,0.3);
-      max-width: 300px;
+      background: #fff;
+      color: #4a0072;
+      padding: 25px 20px;
+      border-radius: 16px;
       text-align: center;
-      animation: popupAnim 0.4s ease forwards;
+      width: 90%;
+      max-width: 300px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
       position: relative;
+      animation: popIn 0.3s ease;
       user-select: none;
     }
-    @keyframes popupAnim {
-      0% { transform: scale(0.8); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
+    @keyframes popIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
     }
-    #popup button.close-btn {
+    .close-btn {
       position: absolute;
-      top: 12px;
-      right: 12px;
-      background: transparent;
+      top: 10px;
+      right: 16px;
+      background: none;
       border: none;
-      font-size: 22px;
-      font-weight: bold;
-      color: #1e3c72;
+      font-size: 24px;
+      color: #999;
       cursor: pointer;
       user-select: none;
     }
-    #popup button.close-btn:hover {
-      color: #d9534f;
+    .close-btn:hover {
+      color: #e91e63;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <img id="profile-pic" class="profile-pic" src="https://via.placeholder.com/140x140?text=No+Image" alt="รูปโปรไฟล์" />
+    <img id="profile-pic" class="profile-pic" src="https://via.placeholder.com/180x225?text=No+Image" alt="รูปโปรไฟล์" />
     <div class="name" id="profile-name">กำลังโหลดชื่อ...</div>
     <div class="position" id="profile-position">ตำแหน่ง</div>
-    <button id="btn-checkin" class="btn-checkin" onclick="toggleCheck()">เช็คอิน</button>
-    <div id="thai-time"></div>
+    <div id="thai-time">--:--:--</div>
+    <div id="thai-date">วันที่ --</div>
+    <button id="btn-checkin" class="btn-checkin checkin" onclick="toggleCheck()">เช็คอิน</button>
     <div id="status"></div>
+
+    <h3>ประวัติการเช็คอิน-เช็คเอาท์</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>วันที่</th>
+          <th>ชื่อ</th>
+          <th>ตำแหน่ง</th>
+          <th>เช็คอิน</th>
+          <th>เช็คเอาท์</th>
+        </tr>
+      </thead>
+      <tbody id="history-body">
+        <tr><td colspan="5" style="padding:12px; text-align:center;">กำลังโหลด...</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <!-- Popup -->
@@ -167,7 +220,7 @@
   <script>
     const allowedLat = 14.870789039762208;
     const allowedLng = 102.02262767399496;
-    const allowedRadius = 3000000000; // เมตร
+    const allowedRadius = 500000000;
 
     const profilePic = document.getElementById("profile-pic");
     const profileName = document.getElementById("profile-name");
@@ -175,16 +228,68 @@
     const btnCheckin = document.getElementById("btn-checkin");
     const status = document.getElementById("status");
     const thaiTimeElem = document.getElementById("thai-time");
+    const thaiDateElem = document.getElementById("thai-date");
 
     const username = localStorage.getItem("username") || "โอม";
-    const position = localStorage.getItem("position") || "พนักงานขาย";
-    const photo_url = localStorage.getItem("photo_url") || "https://via.placeholder.com/140x140?text=No+Image";
+    const position = localStorage.getItem("position") || "พนักงาน";
+    const photo_url = localStorage.getItem("photo_url") || "https://via.placeholder.com/180x225?text=No+Image";
 
     profileName.textContent = username;
     profilePosition.textContent = position;
     profilePic.src = photo_url;
 
     let isCheckedIn = false;
+
+    // ฟังก์ชันแปลง datetime เป็นวันที่ไทย เช่น 2 กรกฎาคม 2568
+    function formatThaiDate(datetimeStr) {
+      try {
+        const months = [
+          "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+          "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+        ];
+        const dt = new Date(datetimeStr);
+        if (isNaN(dt)) return "-";
+        const day = dt.getDate();
+        const month = months[dt.getMonth()];
+        const year = dt.getFullYear() + 543;
+        return `${day} ${month} ${year}`;
+      } catch {
+        return "-";
+      }
+    }
+
+    // ฟังก์ชันแปลง datetime เป็นเวลาชั่วโมง:นาที:วินาที
+    function formatTime(datetimeStr) {
+      try {
+        const dt = new Date(datetimeStr);
+        if (isNaN(dt)) return "-";
+        return dt.toLocaleTimeString('th-TH', {hour12:false, timeZone:'Asia/Bangkok'});
+      } catch {
+        return "-";
+      }
+    }
+
+    function updateThaiTime() {
+      const now = new Date();
+      const options = { timeZone: 'Asia/Bangkok', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      thaiTimeElem.textContent = now.toLocaleTimeString('th-TH', options);
+    }
+
+    function updateThaiDate() {
+      const now = new Date();
+      const months = [
+        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+      ];
+      const day = now.getDate();
+      const month = months[now.getMonth()];
+      const year = now.getFullYear() + 543;
+      thaiDateElem.textContent = `วันที่ ${day} ${month} ${year}`;
+    }
+
+    setInterval(updateThaiTime, 1000);
+    updateThaiTime();
+    updateThaiDate();
 
     function getDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
@@ -197,15 +302,6 @@
       return R * c;
     }
 
-    function updateThaiTime() {
-      const now = new Date();
-      const options = { timeZone: 'Asia/Bangkok', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
-      const timeStr = now.toLocaleTimeString('th-TH', options);
-      thaiTimeElem.textContent = ` Time ${timeStr}`;
-    }
-    setInterval(updateThaiTime, 1000);
-    updateThaiTime();
-
     function checkLocation(callback) {
       if (!navigator.geolocation) {
         showPopup("❌ เบราว์เซอร์ไม่รองรับ GPS");
@@ -213,30 +309,32 @@
         return;
       }
       navigator.geolocation.getCurrentPosition(
-        position => {
-          const lat = position.coords.latitude;
-          const lng = position.coords.longitude;
+        pos => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
           const distance = getDistance(lat, lng, allowedLat, allowedLng);
-          if(distance <= allowedRadius) {
+          if (distance <= allowedRadius) {
             callback(true);
           } else {
-            showPopup("⛔ คุณอยู่นอกพื้นที่ที่กำหนด ไม่สามารถเช็คอินได้");
+            showPopup("⛔ คุณอยู่นอกพื้นที่ ไม่สามารถเช็คอินได้");
             callback(false);
           }
         },
-        error => {
-          showPopup("❌ ไม่สามารถเข้าถึงตำแหน่ง GPS ได้");
+        () => {
+          showPopup("❌ ไม่สามารถเข้าถึง GPS");
           callback(false);
         }
       );
     }
 
     function toggleCheck() {
-      checkLocation(isAllowed => {
-        if (!isAllowed) return;
+      checkLocation(allowed => {
+        if (!allowed) return;
 
         const now = new Date();
-        const datetime = now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+        const datetime = now.toISOString(); // เก็บเป็น ISO เพื่อความแม่นยำ
+        const datetimeDisplay = now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+
         const data = {
           name: username,
           position: position,
@@ -244,46 +342,117 @@
           datetime: datetime
         };
 
-        fetch("https://script.google.com/macros/s/AKfycbyRtlPe0d46eCOqqvzRMobGk30GbtCPYj_-xyXua4egPV-1SN8GSCRikGWIYMn3c76a/exec", {
+        fetch("https://script.google.com/macros/s/AKfycbwLw_JWWjrQKl-OPlW7j4hoVHBaL5Rp_LsxcGrmmI8UXu2hqTQLZ5HULegxXe81GsOo/exec", {
           method: "POST",
           body: JSON.stringify(data),
-          headers: {
-            "Content-Type": "application/json"
-          }
+          headers: { "Content-Type": "application/json" }
         })
         .then(res => res.json())
-        .then(result => {
-          if (data.status === "เช็คอิน") {
-            isCheckedIn = true;
-            btnCheckin.textContent = "เช็คเอาท์";
-            status.textContent = `✅ เช็คอินเรียบร้อย เวลา: ${datetime}`;
-            status.style.color = "#2a5298";
-            showPopup("✅ เช็คอินเรียบร้อย!");
-          } else {
-            isCheckedIn = false;
-            btnCheckin.textContent = "เช็คอิน";
-            status.textContent = `✅ เช็คเอาท์เรียบร้อย เวลา: ${datetime}`;
-            status.style.color = "#d9534f";
-            showPopup("✅ เช็คเอาท์เรียบร้อย!");
-          }
+        .then(() => {
+          isCheckedIn = !isCheckedIn;
+          btnCheckin.textContent = isCheckedIn ? "เช็คเอาท์" : "เช็คอิน";
+          btnCheckin.classList.toggle("checkin", !isCheckedIn);
+          btnCheckin.classList.toggle("checkout", isCheckedIn);
+          status.textContent = `✅ ${isCheckedIn ? "เช็คอิน" : "เช็คเอาท์"} เวลา ${datetimeDisplay}`;
+          showPopup(`✅ ${isCheckedIn ? "เช็คอิน" : "เช็คเอาท์"} สำเร็จ`);
+          loadHistory(); // โหลดประวัติใหม่หลังเช็คอิน/เช็คเอาท์
         })
-        .catch(err => {
-          showPopup("❌ ไม่สามารถบันทึกข้อมูลได้");
-          console.error(err);
+        .catch(() => {
+          showPopup("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล");
         });
       });
     }
 
     function showPopup(message) {
-      const overlay = document.getElementById("popup-overlay");
-      const messageElem = document.getElementById("popup-message");
-      messageElem.textContent = message;
-      overlay.classList.add("show");
+      document.getElementById("popup-message").textContent = message;
+      document.getElementById("popup-overlay").classList.add("show");
     }
 
     function closePopup() {
       document.getElementById("popup-overlay").classList.remove("show");
     }
+
+    // โหลดข้อมูลประวัติย้อนหลัง และจัดกลุ่มตามวันที่และชื่อ
+    function loadHistory() {
+      fetch("https://script.google.com/macros/s/AKfycbyRtlPe0d46eCOqqvzRMobGk30GbtCPYj_-xyXua4egPV-1SN8GSCRikGWIYMn3c76a/exec")
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById("history-body");
+          tbody.innerHTML = "";
+
+          if (!data.records || data.records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="padding:12px; text-align:center;">ไม่มีข้อมูล</td></tr>`;
+            return;
+          }
+
+          // แปลงข้อมูลเป็นโครงสร้าง: { วันที่: {ชื่อ: {position, เช็คอิน, เช็คเอาท์} } }
+          const grouped = {};
+
+          data.records.forEach(entry => {
+            const date = formatThaiDate(entry.datetime);
+            if (!grouped[date]) grouped[date] = {};
+
+            if (!grouped[date][entry.name]) {
+              grouped[date][entry.name] = {
+                position: entry.position,
+                checkin: null,
+                checkout: null,
+              };
+            }
+
+            if (entry.status === "เช็คอิน") {
+              grouped[date][entry.name].checkin = formatTime(entry.datetime);
+            } else if (entry.status === "เช็คเอาท์") {
+              grouped[date][entry.name].checkout = formatTime(entry.datetime);
+            }
+          });
+
+          // สร้างแถวตารางจาก grouped object เรียงวันที่ใหม่ล่าสุดก่อน
+          Object.keys(grouped).sort((a,b) => {
+            function parseThaiDate(d) {
+              const [day, monthName, year] = d.split(' ');
+              const months = {
+                "มกราคม":0, "กุมภาพันธ์":1, "มีนาคม":2, "เมษายน":3, "พฤษภาคม":4, "มิถุนายน":5,
+                "กรกฎาคม":6, "สิงหาคม":7, "กันยายน":8, "ตุลาคม":9, "พฤศจิกายน":10, "ธันวาคม":11
+              };
+              return new Date(parseInt(year)-543, months[monthName], parseInt(day));
+            }
+            return parseThaiDate(b) - parseThaiDate(a);
+          }).forEach(date => {
+            const users = grouped[date];
+            Object.keys(users).forEach(name => {
+              const row = document.createElement("tr");
+              const pos = users[name].position || "-";
+              const checkin = users[name].checkin || "-";
+              const checkout = users[name].checkout || "-";
+              row.innerHTML = `
+                <td>${date}</td>
+                <td>${name}</td>
+                <td>${pos}</td>
+                <td class="checkin-time">${checkin}</td>
+                <td class="checkout-time">${checkout}</td>
+              `;
+              tbody.appendChild(row);
+            });
+          });
+        })
+        .catch(() => {
+          const tbody = document.getElementById("history-body");
+          tbody.innerHTML = `<tr><td colspan="5" style="padding:12px; text-align:center; color:red;">ไม่สามารถโหลดข้อมูล</td></tr>`;
+        });
+    }
+
+    // ตรวจสอบสถานะเริ่มต้น (ถ้าต้องการ เก็บใน localStorage หรือ fetch มา)
+    // ตัวอย่างนี้เริ่มต้นเป็นยังไม่ได้เช็คอิน
+    isCheckedIn = false;
+    btnCheckin.textContent = "เช็คอิน";
+    btnCheckin.classList.add("checkin");
+
+    window.onload = () => {
+      updateThaiTime();
+      updateThaiDate();
+      loadHistory();
+    };
   </script>
 </body>
 </html>
