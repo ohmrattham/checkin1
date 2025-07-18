@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ระบบเช็คอินองค์กร (Firebase Firestore)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit&display=swap" rel="stylesheet" />
+  <style>
+    /* --- CSS จากของคุณปรับนิดหน่อย --- */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Kanit', sans-serif;
+      background: linear-gradient(135deg, #7b1fa2, #9c27b0);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      background: #fff;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 600px;
+      padding: 30px 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      max-height: 95vh;
+      overflow-y: auto;
+    }
+    .profile-pic {
+      width: 180px;
+      height: 225px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 4px solid #ce93d8;
+      background: #f3e5f5;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      user-select: none;
+    }
+    .name {
+      font-size: 24px;
+      font-weight: 700;
+      color: #6a1b9a;
+      user-select: none;
+    }
+    .position {
+      font-size: 16px;
+      color: #7b1fa2;
+      margin-bottom: 10px;
+      user-select: none;
+    }
+    #thai-time {
+      font-size: 18px;
+      color: #4a0072;
+      user-select: none;
+    }
+    #thai-date {
+      font-size: 16px;
+      color: #6a1b9a;
+      margin-bottom: 20px;
+      user-select: none;
+    }
+    .btn-checkin {
+      padding: 14px 30px;
+      font-size: 20px;
+      font-weight: bold;
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: 0.3s;
+      width: 80%;
+      max-width: 280px;
+      user-select: none;
+      cursor: pointer;
+    }
+    .btn-checkin.checkin {
+      background-color: #4CAF50;
+    }
+    .btn-checkin.checkout {
+      background-color: #f44336;
+    }
+    .btn-checkin:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn-checkin:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #444;
+      min-height: 24px;
+      user-select: none;
+    }
+    h3 {
+      color: #6a1b9a;
+      margin-top: 30px;
+      margin-bottom: 12px;
+      user-select: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+      user-select: none;
+    }
+    thead tr {
+      background: #f3e5f5;
+      color: #4a0072;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    tbody tr:hover {
+      background: #fce4ec;
+    }
+    .checkin-time {
+      color: #4CAF50;
+      font-weight: 600;
+    }
+    .checkout-time {
+      color: #f44336;
+      font-weight: 600;
+    }
+    /* Popup Overlay */
+    #popup-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      visibility: hidden;
+      opacity: 0;
+      transition: 0.3s ease;
+      z-index: 1000;
+      user-select: none;
+    }
+    #popup-overlay.show {
+      visibility: visible;
+      opacity: 1;
+    }
+    #popup {
+      background: #fff;
+      color: #4a0072;
+      padding: 25px 20px;
+      border-radius: 16px;
+      text-align: center;
+      width: 90%;
+      max-width: 300px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      position: relative;
+      animation: popIn 0.3s ease;
+      user-select: none;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 16px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #999;
+      cursor: pointer;
+      user-select: none;
+    }
+    .close-btn:hover {
+      color: #e91e63;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <img id="profile-pic" class="profile-pic" src="https://via.placeholder.com/180x225?text=No+Image" alt="รูปโปรไฟล์" />
+    <div class="name" id="profile-name">กำลังโหลดชื่อ...</div>
+    <div class="position" id="profile-position">ตำแหน่ง</div>
+    <div id="thai-time">--:--:--</div>
+    <div id="thai-date">วันที่ --</div>
+    <button id="btn-checkin" class="btn-checkin checkin" onclick="toggleCheck()">เช็คอิน</button>
+    <div id="status"></div>
+
+    <h3>ประวัติการเช็คอิน-เช็คเอาท์</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>วันที่</th>
+          <th>ชื่อ</th>
+          <th>ตำแหน่ง</th>
+          <th>เช็คอิน</th>
+          <th>เช็คเอาท์</th>
+        </tr>
+      </thead>
+      <tbody id="history-body">
+        <tr><td colspan="5" style="padding:12px; text-align:center;">กำลังโหลด...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Popup -->
+  <div id="popup-overlay">
+    <div id="popup">
+      <button class="close-btn" onclick="closePopup()">&times;</button>
+      <p id="popup-message"></p>
+    </div>
+  </div>
+
+  <!-- Firebase SDK แบบ Modular -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+    // กำหนด config firebase ของคุณ
+    const firebaseConfig = {
+      apiKey: "AIzaSyDzuD44_pNIVPxQ18n85ku2bxCTYfA-hg4",
+      authDomain: "checkin-btf.firebaseapp.com",
+      projectId: "checkin-btf",
+      storageBucket: "checkin-btf.firebasestorage.app",
+      messagingSenderId: "274798261936",
+      appId: "1:274798261936:web:d3176de088312ca6e36d75",
+      measurementId: "G-HRS4WE8GH8"
+    };
+
+    // เริ่มต้น firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ตัวแปร global อ้างอิง element DOM
+    const profilePic = document.getElementById("profile-pic");
+    const profileName = document.getElementById("profile-name");
+    const profilePosition = document.getElementById("profile-position");
+    const btnCheckin = document.getElementById("btn-checkin");
+    const status = document.getElementById("status");
+    const thaiTimeElem = document.getElementById("thai-time");
+    const thaiDateElem = document.getElementById("thai-date");
+
+    // กำหนดข้อมูลผู้ใช้ (สามารถแก้ไขตามต้องการ)
+    const username = localStorage.getItem("username") || "โอม";
+    const position = localStorage.getItem("position") || "พนักงาน";
+    const photo_url = localStorage.getItem("photo_url") || "https://via.placeholder.com/180x225?text=No+Image";
+
+    profileName.textContent = username;
+    profilePosition.textContent = position;
+    profilePic.src = photo_url;
+
+    // ตัวแปรสถานะเช็คอิน/เช็คเอาท์
+    let isCheckedIn = false;
+
+    // อัปเดตเวลาไทย (ทุก 1 วินาที)
+    function updateThaiTime() {
+      const now = new Date();
+      const options = { timeZone: 'Asia/Bangkok', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      thaiTimeElem.textContent = now.toLocaleTimeString('th-TH', options);
+    }
+
+    // อัปเดตวันที่ไทย
+    function updateThaiDate() {
+      const now = new Date();
+      const months = [
+        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+      ];
+      const day = now.getDate();
+      const month = months[now.getMonth()];
+      const year = now.getFullYear() + 543;
+      thaiDateElem.textContent = `วันที่ ${day} ${month} ${year}`;
+    }
+
+    setInterval(() => {
+      updateThaiTime();
+      updateThaiDate();
+    }, 1000);
+
+    // แปลงวันที่ ISO เป็นรูปแบบวันที่ไทย
+    function formatThaiDate(datetimeStr) {
+      const months = [
+        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+      ];
+      const dt = new Date(datetimeStr);
+      if (isNaN(dt)) return "-";
+      const day = dt.getDate();
+      const month = months[dt.getMonth()];
+      const year = dt.getFullYear() + 543;
+      return `${day} ${month} ${year}`;
+    }
+
+    // แปลงเวลา ISO เป็น HH:MM:SS
+    function formatTime(datetimeStr) {
+      const dt = new Date(datetimeStr);
+      if (isNaN(dt)) return "-";
+      return dt.toLocaleTimeString('th-TH', {hour12:false, timeZone:'Asia/Bangkok'});
+    }
+
+    // ฟังก์ชันแสดง popup ข้อความ
+    function showPopup(message) {
+      document.getElementById("popup-message").textContent = message;
+      document.getElementById("popup-overlay").classList.add("show");
+    }
+    // ปิด popup
+    function closePopup() {
+      document.getElementById("popup-overlay").classList.remove("show");
+    }
+
+    // เช็คตำแหน่ง GPS (ระยะ 500 เมตร จากพิกัดที่อนุญาต)
+    const allowedLat = 14.870789039762208;
+    const allowedLng = 102.02262767399496;
+    const allowedRadius = 300; // เมตร
+
+    function getDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    // เช็คตำแหน่ง
+    function checkLocation(callback) {
+      if (!navigator.geolocation) {
+        showPopup("❌ เบราว์เซอร์ไม่รองรับ GPS");
+        callback(false);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const distance = getDistance(lat, lng, allowedLat, allowedLng);
+          if (distance <= allowedRadius) {
+            callback(true);
+          } else {
+            showPopup("⛔ คุณอยู่นอกพื้นที่ ไม่สามารถเช็คอินได้");
+            callback(false);
+          }
+        },
+        () => {
+          showPopup("❌ ไม่สามารถเข้าถึง GPS");
+          callback(false);
+        }
+      );
+    }
+
+    // ฟังก์ชันเช็คอิน/เช็คเอาท์
+    async function toggleCheck() {
+      checkLocation(async (allowed) => {
+        if (!allowed) return;
+
+        const now = new Date();
+        const datetime = now.toISOString();
+        const datetimeDisplay = now.toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' });
+
+        const data = {
+          name: username,
+          position: position,
+          status: isCheckedIn ? "เช็คเอาท์" : "เช็คอิน",
+          datetime: datetime
+        };
+
+        try {
+          await addDoc(collection(db, "checkins"), data);
+
+          // สลับสถานะ
+          isCheckedIn = !isCheckedIn;
+
+          // อัปเดตปุ่ม
+          btnCheckin.textContent = isCheckedIn ? "เช็คเอาท์" : "เช็คอิน";
+          btnCheckin.classList.toggle("checkin", !isCheckedIn);
+          btnCheckin.classList.toggle("checkout", isCheckedIn);
+
+          status.textContent = `✅ ${isCheckedIn ? "เช็คอิน" : "เช็คเอาท์"} เวลา ${datetimeDisplay}`;
+
+          showPopup(`✅ ${isCheckedIn ? "เช็คอิน" : "เช็คเอาท์"} สำเร็จ`);
+
+          loadHistory();
+
+        } catch (err) {
+          console.error(err);
+          showPopup("❌ เกิดข้อผิดพลาดในการบันทึกข้อมูล");
+        }
+      });
+    }
+
+    // โหลดประวัติการเช็คอินจาก Firestore
+   async function loadHistory() {
+  const tbody = document.getElementById("history-body");
+  tbody.innerHTML = `<tr><td colspan="5" style="padding:12px; text-align:center;">กำลังโหลด...</td></tr>`;
+
+  try {
+    const q = query(collection(db, "checkins"), orderBy("datetime", "desc"));
+    const querySnapshot = await getDocs(q);
+    const records = [];
+    querySnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.name === username) {
+        records.push(data);
+      }
+    });
+
+    if (records.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="padding:12px; text-align:center;">ไม่มีข้อมูล</td></tr>`;
+      return;
+    }
+
+    // จัดกลุ่มตามวัน
+    const grouped = {};
+    records.forEach(entry => {
+      const date = formatThaiDate(entry.datetime);
+      if (!grouped[date]) {
+        grouped[date] = {
+          position: entry.position,
+          checkin: null,
+          checkout: null,
+        };
+      }
+
+      if (entry.status === "เช็คอิน") {
+        grouped[date].checkin = formatTime(entry.datetime);
+      } else if (entry.status === "เช็คเอาท์") {
+        grouped[date].checkout = formatTime(entry.datetime);
+      }
+    });
+
+    // สร้างตาราง
+    tbody.innerHTML = "";
+    Object.keys(grouped).sort((a,b) => {
+      function parseThaiDate(d) {
+        const [day, monthName, year] = d.split(' ');
+        const months = {
+          "มกราคม":0, "กุมภาพันธ์":1, "มีนาคม":2, "เมษายน":3, "พฤษภาคม":4, "มิถุนายน":5,
+          "กรกฎาคม":6, "สิงหาคม":7, "กันยายน":8, "ตุลาคม":9, "พฤศจิกายน":10, "ธันวาคม":11
+        };
+        return new Date(parseInt(year)-543, months[monthName], parseInt(day));
+      }
+      return parseThaiDate(b) - parseThaiDate(a);
+    }).forEach(date => {
+      const entry = grouped[date];
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${date}</td>
+        <td>${username}</td>
+        <td>${entry.position || "-"}</td>
+        <td class="checkin-time">${entry.checkin || "-"}</td>
+        <td class="checkout-time">${entry.checkout || "-"}</td>
+      `;
+      tbody.appendChild(row);
+    });
+
+  } catch (error) {
+    console.error(error);
+    tbody.innerHTML = `<tr><td colspan="5" style="padding:12px; text-align:center; color:red;">ไม่สามารถโหลดข้อมูล</td></tr>`;
+  }
+}
+
+
+    // ตั้งค่าเริ่มต้นปุ่มและสถานะ
+    isCheckedIn = false;
+    btnCheckin.textContent = "เช็คอิน";
+    btnCheckin.classList.add("checkin");
+
+    // ผูกฟังก์ชัน toggleCheck กับ window เพื่อให้เรียกผ่าน onclick ใน HTML ได้
+    window.toggleCheck = toggleCheck;
+    window.closePopup = closePopup;
+
+    // เมื่อโหลดหน้า
+    window.onload = () => {
+      updateThaiTime();
+      updateThaiDate();
+      loadHistory();
+    };
+  </script>
+</body>
+</html>

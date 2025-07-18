@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Dashboard - ดูประวัติการเช็คอิน</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Kanit', sans-serif;
+      margin: 20px;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h2 {
+      color: #6a1b9a;
+      margin-bottom: 12px;
+    }
+    select, button {
+      padding: 8px 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #aaa;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 16px;
+      background: white;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #9c27b0;
+      color: white;
+    }
+    tbody tr:hover {
+      background: #f3e5f5;
+    }
+    .checkin-time {
+      color: #4CAF50;
+      font-weight: 600;
+    }
+    .checkout-time {
+      color: #f44336;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Admin Dashboard: ดูประวัติการเช็คอินตามรายบุคคล</h2>
+
+  <label for="user-select">เลือกชื่อพนักงาน:</label><br/>
+  <select id="user-select">
+    <option value="">-- กรุณาเลือกชื่อ --</option>
+  </select>
+
+  <button id="refresh-btn">โหลดข้อมูล</button>
+
+  <table>
+    <thead>
+      <tr>
+        <th>วันที่</th>
+        <th>เช็คอิน</th>
+        <th>เช็คเอาท์</th>
+      </tr>
+    </thead>
+    <tbody id="history-body">
+      <tr><td colspan="3" style="padding: 12px;">โปรดเลือกชื่อเพื่อดูประวัติ</td></tr>
+    </tbody>
+  </table>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, orderBy, where } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+    // กำหนด config firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDzuD44_pNIVPxQ18n85ku2bxCTYfA-hg4",
+      authDomain: "checkin-btf.firebaseapp.com",
+      projectId: "checkin-btf",
+      storageBucket: "checkin-btf.firebasestorage.app",
+      messagingSenderId: "274798261936",
+      appId: "1:274798261936:web:d3176de088312ca6e36d75",
+      measurementId: "G-HRS4WE8GH8"
+    };
+
+    // เริ่มต้น Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const userSelect = document.getElementById('user-select');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const tbody = document.getElementById('history-body');
+
+    // ดึงรายชื่อพนักงานแบบไม่ซ้ำ จาก Firestore แล้วเพิ่มใน select
+    async function loadUsers() {
+      const usersSet = new Set();
+      const q = query(collection(db, "checkins"));
+      const snapshot = await getDocs(q);
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        if(data.name) usersSet.add(data.name);
+      });
+      const users = Array.from(usersSet).sort();
+
+      users.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        userSelect.appendChild(option);
+      });
+    }
+
+    // แปลงวันที่ ISO เป็นรูปแบบวันที่ไทย
+    function formatThaiDate(datetimeStr) {
+      const months = [
+        "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+      ];
+      const dt = new Date(datetimeStr);
+      if (isNaN(dt)) return "-";
+      const day = dt.getDate();
+      const month = months[dt.getMonth()];
+      const year = dt.getFullYear() + 543;
+      return `${day} ${month} ${year}`;
+    }
+
+    // แปลงเวลา ISO เป็น HH:MM:SS
+    function formatTime(datetimeStr) {
+      const dt = new Date(datetimeStr);
+      if (isNaN(dt)) return "-";
+      return dt.toLocaleTimeString('th-TH', {hour12:false, timeZone:'Asia/Bangkok'});
+    }
+
+    // โหลดประวัติการเช็คอินของคนที่เลือก
+    async function loadUserHistory(userName) {
+      if (!userName) {
+        tbody.innerHTML = `<tr><td colspan="3" style="padding:12px;">โปรดเลือกชื่อเพื่อดูประวัติ</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = `<tr><td colspan="3" style="padding:12px; text-align:center;">กำลังโหลด...</td></tr>`;
+
+      try {
+        // ดึงข้อมูลของ user นั้นๆ เรียงตาม datetime DESC
+        const q = query(
+          collection(db, "checkins"),
+          where("name", "==", userName),
+          orderBy("datetime", "desc")
+        );
+        const snapshot = await getDocs(q);
+        const records = [];
+        snapshot.forEach(doc => records.push(doc.data()));
+
+        if (records.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="3" style="padding:12px;">ไม่มีข้อมูล</td></tr>`;
+          return;
+        }
+
+        // จัดกลุ่มตามวันที่ เพื่อแสดงเช็คอิน/เช็คเอาท์ วันเดียวกัน
+        const grouped = {};
+
+        records.forEach(entry => {
+          const date = formatThaiDate(entry.datetime);
+          if (!grouped[date]) {
+            grouped[date] = { checkin: null, checkout: null };
+          }
+          if (entry.status === "เช็คอิน") grouped[date].checkin = formatTime(entry.datetime);
+          else if (entry.status === "เช็คเอาท์") grouped[date].checkout = formatTime(entry.datetime);
+        });
+
+        tbody.innerHTML = "";
+
+        // แสดงข้อมูล
+        Object.keys(grouped).sort((a,b) => {
+          function parseThaiDate(d) {
+            const [day, monthName, year] = d.split(' ');
+            const months = {
+              "มกราคม":0, "กุมภาพันธ์":1, "มีนาคม":2, "เมษายน":3, "พฤษภาคม":4, "มิถุนายน":5,
+              "กรกฎาคม":6, "สิงหาคม":7, "กันยายน":8, "ตุลาคม":9, "พฤศจิกายน":10, "ธันวาคม":11
+            };
+            return new Date(parseInt(year)-543, months[monthName], parseInt(day));
+          }
+          return parseThaiDate(b) - parseThaiDate(a);
+        }).forEach(date => {
+          const row = document.createElement("tr");
+          const checkin = grouped[date].checkin || "-";
+          const checkout = grouped[date].checkout || "-";
+          row.innerHTML = `
+            <td>${date}</td>
+            <td class="checkin-time">${checkin}</td>
+            <td class="checkout-time">${checkout}</td>
+          `;
+          tbody.appendChild(row);
+        });
+
+      } catch (error) {
+        console.error(error);
+        tbody.innerHTML = `<tr><td colspan="3" style="padding:12px; color:red;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
+      }
+    }
+
+    // event listeners
+    refreshBtn.addEventListener('click', () => {
+      const selectedUser = userSelect.value;
+      loadUserHistory(selectedUser);
+    });
+
+    userSelect.addEventListener('change', () => {
+      const selectedUser = userSelect.value;
+      loadUserHistory(selectedUser);
+    });
+
+    // โหลดรายชื่อเมื่อเปิดหน้า
+    loadUsers();
+  </script>
+</body>
+</html>
